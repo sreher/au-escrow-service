@@ -19,7 +19,9 @@
     "> 5%"
   ],
   "dependencies": {
+    "@enzoferey/ethers-error-parser": "^0.2.3",
     "ethers": "^5.7.2",
-    "react": "^18.2.0"
+    "react": "^18.2.0",
+    "react-cookie": "^7.1.0"
   }
 }
