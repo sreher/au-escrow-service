@@ -1,5 +1,7 @@
-import {ethers} from "ethers";
-import { useCookies } from 'react-cookie';
+import { ethers } from "ethers";
+import { useCookies } from "react-cookie";
+import { useState } from "react";
+import { Button } from "antd";
 
 export default function Escrow({
   address,
@@ -7,14 +9,16 @@ export default function Escrow({
   beneficiary,
   value,
   handleApprove,
+  approveLoading,
 }) {
-  const [cookies] = useCookies(['escrow']);
+  const [cookies] = useCookies(["escrow"]);
+
   return (
     <div className="existing-contract">
       <ul className="fields">
         <li>
           <div> Address</div>
-          <div> {cookies.escrow} </div>
+          <div> {address} </div>
         </li>
         <li>
           <div> Arbiter</div>
@@ -26,19 +30,22 @@ export default function Escrow({
         </li>
         <li>
           <div> Value</div>
-          <div> {value ? ethers.utils.formatUnits(value, "ether") : '0'} ETH</div>
+          <div>
+            {" "}
+            {value ? ethers.utils.formatUnits(value, "ether") : "0"} ETH
+          </div>
         </li>
-        <div
-            className="button"
-            id={address}
-            onClick={(e) => {
-              e.preventDefault();
-
-              handleApprove();
-            }}
+        <Button
+          type="primary"
+          id={address}
+          loading={approveLoading}
+          onClick={(e) => {
+            e.preventDefault();
+            handleApprove();
+          }}
         >
           Approve
-        </div>
+        </Button>
       </ul>
     </div>
   );

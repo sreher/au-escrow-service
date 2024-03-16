@@ -1,6 +1,10 @@
-import { ethers } from 'ethers';
+import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(ethereum);
+const url = process.env.ALCHEMY_TESTNET_RPC_URL;
+const provider = new ethers.providers.JsonRpcProvider(url);
+
+// local provicer
+// const provider = new ethers.providers.Web3Provider(ethereum);
 
 export default async function addContract(
   id,
@@ -11,15 +15,15 @@ export default async function addContract(
 ) {
   const buttonId = `approve-${id}`;
 
-  const container = document.getElementById('container');
+  const container = document.getElementById("container");
   container.innerHTML += createHTML(buttonId, arbiter, beneficiary, value);
 
-  contract.on('Approved', () => {
-    document.getElementById(buttonId).className = 'complete';
+  contract.on("Approved", () => {
+    document.getElementById(buttonId).className = "complete";
     document.getElementById(buttonId).innerText = "✓ It's been approved!";
   });
 
-  document.getElementById(buttonId).addEventListener('click', async () => {
+  document.getElementById(buttonId).addEventListener("click", async () => {
     const signer = provider.getSigner();
     await contract.connect(signer).approve();
   });

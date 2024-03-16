@@ -1,11 +1,12 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import './index.css';
-import reportWebVitals from './reportWebVitals';
-import { CookiesProvider } from 'react-cookie';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import "./index.css";
+import reportWebVitals from "./reportWebVitals";
+import { CookiesProvider } from "react-cookie";
+import { ConfigProvider } from "antd";
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(document.getElementById("root"));
 
 if (!window.ethereum) {
   root.render(
@@ -16,9 +17,17 @@ if (!window.ethereum) {
 } else {
   root.render(
     <React.StrictMode>
-        <CookiesProvider defaultSetOptions={{ path: '/' }}>
-            <App />
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: "#7770b3",
+          },
+        }}
+      >
+        <CookiesProvider defaultSetOptions={{ path: "/" }}>
+          <App />
         </CookiesProvider>
+      </ConfigProvider>
     </React.StrictMode>
   );
 }
