@@ -70,5 +70,13 @@ input[type="text"] {
 
 .existing-contract .complete {
   color: #5aa75a;
+  background-color: inherit;
+  border: 1px solid #ccc;
+  box-shadow: none;
   text-align: center;
+  font-size: 14px;
+  line-height: 1.5714285714285714;
+  height: 32px;
+  padding: 4px 15px;
+  border-radius: 6px;
 }

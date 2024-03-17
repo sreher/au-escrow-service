@@ -10,6 +10,7 @@ export default function Escrow({
   value,
   handleApprove,
   approveLoading,
+  isApproved,
 }) {
   const [cookies] = useCookies(["escrow"]);
 
@@ -39,12 +40,14 @@ export default function Escrow({
           type="primary"
           id={address}
           loading={approveLoading}
+          className={isApproved ? "complete" : ""}
+          disabled={isApproved ? "disable" : ""}
           onClick={(e) => {
             e.preventDefault();
             handleApprove();
           }}
         >
-          Approve
+          {isApproved ? "✓ It's been approved!" : "Approve"}
         </Button>
       </ul>
     </div>

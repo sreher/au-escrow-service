@@ -5,24 +5,16 @@ import { useCookies } from "react-cookie";
 import { approve } from "./App";
 
 async function deploy(signer, arbiter, beneficiary, value) {
-  // const url = process.env.ALCHEMY_TESTNET_RPC_URL;
-  // const provider = new ethers.providers.JsonRpcProvider(url);
-  console.log("signer: ", signer);
-  console.log("arbiter: ", arbiter);
-  console.log("beneficiary: ", beneficiary);
-  console.log("value: ", value);
-
   const factory = new ethers.ContractFactory(
     Escrow.abi,
     Escrow.bytecode,
     signer
   );
 
-  console.log("deploy - Before deploy !!!");
+  // deploy the contract to the blockchain
   let escrow = factory
     .deploy(arbiter, beneficiary, { value })
     .then((tx) => {
-      console.log("deploy - Works: ", tx);
       console.log("deploy - address - Works: ", tx.address);
       return tx;
     })
@@ -31,21 +23,22 @@ async function deploy(signer, arbiter, beneficiary, value) {
       if (parsedEthersError.errorCode === "REJECTED_TRANSACTION") {
         console.log("deploy - Transaction was rejected");
       } else {
-        // console.log("deploy - Debug after deploy: ", parsedEthersError);
-        console.log(
-          "deploy - context - Debug after deploy: ",
-          parsedEthersError.context
-        );
+        console.log("deploy - context - Debug: ", parsedEthersError.context);
       }
     });
   return escrow;
 }
 
-async function getEscrowContract(signer, escrowAddresses) {
+/**
+ * load the escrow contracts from the blockchain with the given escrowAddresses
+ * @param signer
+ * @param escrowAddresses
+ * @returns {Promise<*[]|boolean>}
+ */
+async function getEscrowContract(signer, escrowAddresses, setApproveLoading) {
   if (!signer || !escrowAddresses) return false;
-  console.log("escrowAddresses %o", escrowAddresses);
-  console.log("Signer %o", signer);
-  // go through the list of deployed escrow contracts
+
+  // go through the list of deployed escrow contracts and save the values in the escrowObjectArray
   const escrowObjectArray = [];
   for (let i = 0; i < escrowAddresses.length; i++) {
     const escrowAddress = escrowAddresses[i];
@@ -54,12 +47,14 @@ async function getEscrowContract(signer, escrowAddresses) {
       Escrow.abi,
       signer
     );
+    // load the contract from the blockchain and ask for the values
     const contract = await tokenContract.connect(signer);
     const arbiter = await contract.arbiter();
     const beneficiary = await contract.beneficiary();
     const isApproved = await contract.isApproved();
     const balance = await contract.provider.getBalance(escrowAddress);
 
+    // build up the escrow object
     escrowObjectArray.push({
       address: escrowAddress,
       arbiter: arbiter,
@@ -72,8 +67,9 @@ async function getEscrowContract(signer, escrowAddresses) {
             "✓ It's been approved!";
         });
         console.log("Before approve");
-        await approve(contract, signer);
+        await approve(contract, signer, setApproveLoading);
       },
+      isApproved,
     });
   }
   return escrowObjectArray;

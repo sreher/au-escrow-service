@@ -5,17 +5,29 @@ import Escrow from "./Escrow";
 import { Cookies, useCookies } from "react-cookie";
 import { Button } from "antd";
 import { Layout, Flex, Typography } from "antd";
+import { getParsedEthersError } from "@enzoferey/ethers-error-parser";
 
 const { Header, Footer, Sider, Content } = Layout;
 
 // local provider
 const provider = new ethers.providers.Web3Provider(window.ethereum);
 
-export async function approve(escrowContract, signer) {
+/**
+ * Connect to the blockchain and execute the approve function of the contract
+ * @param escrowContract
+ * @param signer
+ * @param setApproveLoading
+ * @returns {Promise<void>}
+ */
+export async function approve(escrowContract, signer, setApproveLoading) {
+  setApproveLoading(true);
   const approveTxn = await escrowContract.connect(signer).approve();
   await approveTxn.wait();
+  setApproveLoading(false);
 }
 
+// inline styles for the layout
+// TODO: move this values to the css file
 const headerStyle = {
   textAlign: "center",
   color: "#fff",
@@ -56,37 +68,27 @@ function App() {
   useEffect(() => {
     async function getAccounts() {
       const accounts = await provider.send("eth_requestAccounts", []);
-      // console.log("getAccounts - %s", accounts[0]);
       setAccount(accounts[0]);
-      // const url = process.env.ALCHEMY_TESTNET_RPC_URL;
-      // const provider = new ethers.providers.JsonRpcProvider(url);
-
-      console.log("provider:  ", provider);
       setSigner(provider.getSigner());
     }
 
+    /**
+     * Check if there is a escrow cookie and try to load the contract
+     * @returns {Promise<void>}
+     */
     async function getAppEscrowContract() {
-      console.log("Debug %s", escrows.length);
       if (
         escrows.length === 0 &&
         signer &&
         cookies.escrow &&
-        cookies.escrow.length !== 0 &&
-        cookies.escrow !== undefined
+        cookies.escrow.length !== 0
       ) {
-        console.log("getAppEscrowContract length: %s", cookies.escrow.length);
-        console.log("getAppEscrowContract: %s", cookies.escrow);
-        getEscrowContract(signer, cookies.escrow).then((escrow) => {
-          console.log(
-            "getAppEscrowContract - loaded from Cookie Address:  ",
-            escrow
-          );
-          setEscrows([...escrow]);
-          console.log(
-            "getAppEscrowContract - loaded from Cookie Address:  ",
-            escrows
-          );
-        });
+        // delegate the loading to the deploy.js file
+        getEscrowContract(signer, cookies.escrow, setApproveLoading).then(
+          (escrow) => {
+            setEscrows([...escrow]);
+          }
+        );
       }
       setDeployLoading(false);
     }
@@ -96,26 +98,32 @@ function App() {
   }, [account]);
 
   async function newContract() {
+    // start spinner
     setDeployLoading(true);
+    // get values from input elements
     const beneficiary = document.getElementById("beneficiary").value;
     const arbiter = document.getElementById("arbiter").value;
+    // interpret the input as ether
     const value = ethers.utils.parseUnits(
       document.getElementById("ether").value,
       "ether"
     );
 
+    // start deploying the contract
     const escrowContract = await deploy(signer, arbiter, beneficiary, value)
       .then((tx) => {
-        console.log("newContract - WORKS !!!", tx);
         return tx;
       })
-      .catch((e) => {
-        console.log("newContract - Fehler !!!!!", e);
-        if (e.code === 4001) {
-          console.log("newContract - 4001 Fehler !!!");
+      .catch((error) => {
+        const parsedEthersError = getParsedEthersError(error);
+        if (parsedEthersError.errorCode === "REJECTED_TRANSACTION") {
+          console.log("newContract - Transaction was rejected");
+        } else {
+          console.log("newContract - error: ", parsedEthersError.context);
         }
       });
 
+    // build the object structure of the escrow frontend display
     const escrow = {
       address: escrowContract.address,
       arbiter,
@@ -128,31 +136,26 @@ function App() {
           document.getElementById(escrowContract.address).innerText =
             "✓ It's been approved!";
         });
-        await approve(escrowContract, signer);
+        await approve(escrowContract, signer, setApproveLoading);
       },
       approveLoading,
+      isApproved: false,
     };
 
     setEscrows([...escrows, escrow]);
-    console.log("newContract - Escrows:  ", escrows);
-    console.log("newContract - Escrow:  ", escrow);
 
+    // make the escrows persistent, so when you refresh the page, the escrow smart contracts are not gone!
     let cookieArray = [];
     if (cookies.escrow && cookies.escrow.length > 0) {
-      console.log("newContract - cookieArray: %o", cookies.escrow);
       cookieArray = Array.from(cookies.escrow);
-      cookieArray.push(escrow.address);
-    } else {
-      cookieArray.push(escrow.address);
-      //cookieArray.push(cookies.escrow);
     }
-    console.log("newContract before setCookie %o", cookieArray);
+    cookieArray.push(escrow.address);
     setCookie("escrow", cookieArray);
-    console.log("newContract - cookie: %o", cookies);
+    /*
     if (cookies.escrow) {
       const cookieEscrow = cookies.escrow;
-      console.log("newContract - contract end ", cookieEscrow);
     }
+    */
     setDeployLoading(false);
   }
 
